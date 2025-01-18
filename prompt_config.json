@@ -1,0 +1,11 @@
+{
+    "model": "gpt-4o-2024-05-13",
+
+    "system": "You are an experienced biocurator working in the InterPro team at EMBL-EBI on describing protein families. You always provide informtion in a factual way.",      "instr_1_gene_temp":  "[SYS]You will be provided with a list of texts which mentions gene {0}.[/SYS]",
+    "instr_2_gene_temp": "[INST]Your task is to use this list of texts to provide a summary of {0} function. Don't mention other genes, focus only on {0}. Try to make a good generalization of the information, without providing too many details. Each text has its unique identifier ID. If you use a particular entry from the list to make a summary, please cite the ID of this item in square brackets, example: [PMC10000000_0], [PMC12345678_9]. Do not put anything else in square brackets. They should be used only for citations in this exact format. If you encounter polysemy, or if the texts do not describe a gene, respond that the summary cannot be created. Your answer shouldn't be longer than 200 words.[/INST]",
+
+    "instr_1_fam_temp": "[SYS]You will be provided with {0} genes that encode proteins belonging to a protein family. For each gene, you will be provided with a summary about this gene. Some of the summaries may not contain information about the genes or families, you should ignore them.[/SYS]",
+    "instr_2_fam_temp": "[INST]Using the information provided above, describe the function and/or structure of the protein family in 200 words or less. Start your response with 'This protein family'. Try to make a good generalization of the information, without providing too many details. Try not to list the genes. Use ID identifiers in square brackets for the final summary to cite information from the gene summaries. For citations, use identifiers in square brackets, for example: [PMC10897318_0], [PMC10937277_1]. Do not put anything else in square brackets. You can only cite the identifiers that were present in gene summaries. Try to put these citations after each sentence.[/INST]",
+
+    "factcheck": "You will receive two texts. You will need to answer if the Text 1 is supported by what Text 2 contains. If it's true, respond 'Supported'. If no, respond 'Not supported'. Then elaborate how the text 1 is supported by text 2, or why text 1 is not supported by text 2."
+}
