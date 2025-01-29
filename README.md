@@ -16,6 +16,11 @@ main:
 * ```-q, --query```: query family. PANTHER, InterPro, Pfam are supported.
 * ```-dir, --dir-name```: output directory. Will be created if doesn't exist.
 * ```-config, --config```: prompt config. Should be in json format.
+  
+  ```configs``` directory has the following configs:
+  * * ```config.json```: simple config. The model will generate only family summary (no name/short_name)
+  * * ```config-without-name.json```:  The model will generate only family summary (no name/short_name). Similar to previous config, but the prompt is written differently.
+  * * ```config-desc-name-CoT.json```:  The model will generate family summary, name, short_name. Uses Chain of Thought approach for name/shart_name.
 * ```-genes, --gene-list```: (optional) path to the file containing genes for the family. Should be in directory {dir_name}/{query}. Should be in format ```{gene_name}\t{uniprot_acc}```.
 
 The following can be left without modification:
