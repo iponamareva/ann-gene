@@ -26,7 +26,7 @@ The following can be left without modification:
 * ```-s, --snippet-window-size```: snippet window size in characters, snippet will be 2 times longer
 
 LLM-specific:
-* ```-N1, --num-genes-in-prompt```: number of snippets used in prompt to create a gene summary. Default 100 is ok.
+* ```-N1, --num-snippets-in-prompt```: number of snippets used in prompt to create a gene summary. Default 100 is ok.
 * ```-N, --gpt4-n```: number of genes used in prompt for family summary. Default is 3, but I suggest using 10
 * ```-run-gpt, --run-gpt```: if API call to GPT should be ran. Set to ```True``` if you want to run it.
 
