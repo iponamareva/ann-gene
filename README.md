@@ -35,12 +35,14 @@ LLM-specific:
 **pull_genes** -- creates a list of genes for the query family. Creates two files, which have the following format: ```{gene_name}\t{uniprot_acc}```
 * ```genes_full_list_reviewed.txt```
 * ```genes_full_list_unreviewed.txt```
+  
 **get_save_gene_snippets** -- searches for snippets mentioning the gene names in EuropePMC. Creates:
-* Log file that records which genes have been already searched for. It becomes useful when gene search in EuropePMC breaks, because EuropePMC can't handle too many requests at one time. This ususlly happens when you're running the script for many families at once. So when you restart it, with ```-Force=True```, it will start the gene search not from the beginning of the gene list, but from the gene where it broke down. If you run the script for few families, you don't need to worry about this.
+* Log file ```gene_snippet_search_log.json``` that records which genes have been already searched for. It becomes useful when gene search in EuropePMC breaks, because EuropePMC can't handle too many requests at one time. This ususlly happens when you're running the script for many families at once. So when you restart it, with ```-Force=True```, it will start the gene search not from the beginning of the gene list, but from the gene where it broke down. If you run the script for few families, you don't need to worry about this.
 * ```{dir_name}/{query}/snippets_per_gene```: directory with csv files for each gene (gene_name.csv) which contain the snippets
 * ```genes_with_papers_list_all_review_status.txt```: file which contains information about genes for which snippets were found. Format: ```{gene_name}\t{num_papers}\t{num_snippets}```
   
 **join_snippets_into_prompt**: uses snippets created by the previous function to create gene-specific prompts for generating gene summary.
+
 **select_genes**: performs filtering and sorting of the genes. 
 
 Filtering is based on gene specificity to a family. See ```utils_famfilter.py``` for details. Graphical explanation below:
@@ -60,6 +62,7 @@ Creates files:
 ### LLM-specific functions:
 
 **get_gpt_genes_response**: creates gene summaries. With specific sample size (e.g. 10 genes) and specific model (e.g.o1) it creates only one file, e.g. ```per_gene_summaries_gpt-4o-2024-05-13_sample_10_4o.csv```
+
 **get_gpt_family_response**: creates a family summary. Each run will create seperate 3 files with a timestamp:
 * prompt file
 * raw response file (raw generated text)
