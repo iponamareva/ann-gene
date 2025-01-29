@@ -26,7 +26,7 @@ from utils_gpt import factcheck_summary, factcheck_gene_summary
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-config', '--config', type=str, default='prompt_config.json')
+    parser.add_argument('-config', '--config', type=str, default='configs/config.json')
     parser.add_argument("-q", "--query", type=str, help='family')
     parser.add_argument("-genes", '--gene-list', type=str, default='gene_list_sorted.txt')
     
