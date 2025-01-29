@@ -40,7 +40,7 @@ def main():
     parser.add_argument("-max3", "--max-genes-each-type", type=int, default=1000, help='maximum number of genes')
     parser.add_argument('-s', '--snippet-window-size', type=int, default=300, help='snippet window size in characters, snippet will be 2 times longer')
     
-    parser.add_argument('-N1', '--num-genes-in-prompt', type=int, default=100)
+    parser.add_argument('-N1', '--num-snippets-in-prompt', type=int, default=100)
     parser.add_argument('-N', '--gpt4-n', type=int, default=3)
     parser.add_argument('-run-gpt', '--run-gpt', type=int, default=0)
     
@@ -61,7 +61,7 @@ def main():
     pull_genes(family=args.query, dir=args.dir_name, max_pages=args.max_pages_per_family, force_flag=args.FORCE)
     num_genes_with_snippets = get_save_gene_snippets(args.query, args.dir_name, args.max_pages_per_gene, args.snippet_window_size, force_flag=args.FORCE, from_gene_list=False, max_genes_each_type=args.max_genes_each_type, gene_list_filename=args.gene_list)
 
-    join_snippets_into_prompt(args.query, args.dir_name, args.num_genes_in_prompt, config)
+    join_snippets_into_prompt(args.query, args.dir_name, args.num_snippets_in_prompt, config)
 
     select_genes(args.query, args.dir_name, args.gpt4_n)
     
