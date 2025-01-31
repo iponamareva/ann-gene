@@ -63,17 +63,21 @@ def main():
 
     join_snippets_into_prompt(args.query, args.dir_name, args.num_snippets_in_prompt, config)
 
-    select_genes(args.query, args.dir_name, args.gpt4_n)
+    selected_genes_file_paths = select_genes(args.query, args.dir_name, args.gpt4_n)
     
     ''' Using GPT-4 API to make summaries '''
     if args.run_gpt:
+        if len(selected_genes_file_paths) > 0:
     
-        client = openai.OpenAI()
-        GPT_USAGE_1, gene_names, gpt4_responses = get_gpt_genes_response(client, args.query, args.dir_name, args.gpt4_n, config, args.prompt_th)
-        GPT_USAGE_2, parsed_response, pmid_parsed_response = get_gpt_family_response(client, args.query, args.dir_name, gene_names, gpt4_responses, config)
+            client = openai.OpenAI()
+            GPT_USAGE_1, gene_names, gpt4_responses = get_gpt_genes_response(client, args.query, args.dir_name, args.gpt4_n, config, args.prompt_th)
+            GPT_USAGE_2, parsed_response, pmid_parsed_response = get_gpt_family_response(client, args.query, args.dir_name, gene_names, gpt4_responses, config)
     
-        print('*'*30 + args.query + '*'*30, f'\n{parsed_response}\n', '*'*79)
-        print(f'\n{pmid_parsed_response}\n', '*'*79)
+            print('*'*30 + args.query + '*'*30, f'\n{parsed_response}\n', '*'*79)
+            print(f'\n{pmid_parsed_response}\n', '*'*79)
+            
+        else:
+            print('INFO: No genes with snippets were selected. Family summary is not possible')
 
 if __name__ == "__main__":
     main()
