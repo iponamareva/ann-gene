@@ -7,7 +7,7 @@
     "instr_2_gene_temp": "file:configs/gene_summary.txt",
 
     "instr_1_fam_temp": "You will be provided with {0} genes that encode proteins belonging to a protein family. For each gene, you will be provided with a summary about this gene. Some of the summaries may not contain information about the genes or families, you should ignore them.",
-    "instr_2_fam_temp": "file:configs/name_instruct_chain.txt",
+    "instr_2_fam_temp": "file:configs/desc-name-CoT.txt",
     
     "factcheck": "You will receive two texts. You will need to answer if the Text 1 is supported by what Text 2 contains. If it's true, respond 'Supported'. If no, respond 'Not supported'. Then elaborate how the text 1 is supported by text 2, or why text 1 is not supported by text 2."
 }
