@@ -4,9 +4,10 @@
     "system": "You are an experienced biocurator working in the InterPro team at EMBL-EBI on describing protein families. You always provide informtion in a factual way.",
     
     "instr_1_gene_temp":  "You will be provided with a list of texts which mentions gene {0}.",
-    "instr_2_gene_temp": "Your task is to use this list of texts to provide a summary of {0} function. Don't mention other genes, focus only on {0}. Try to make a good generalization of the information, without providing too many details. Each text has its unique identifier ID. If you use an entry from the list to make a summary, you must cite the ID of this item in square brackets, example: [PMC10000000_0], [PMC12345678_9]. You can not cite identifiers which were not present in the list. Do not put anything else in square brackets. They should be used only for citations in this exact format. If you encounter polysemy, or if the texts do not describe a gene, respond that the summary cannot be created. Your answer shouldn't be longer than 200 words.",
-
+    "instr_2_gene_temp": "file:configs/gene_summary.txt",
+    
     "instr_1_fam_temp": "You will be provided with {0} genes that encode proteins belonging to a protein family. For each gene, you will be provided with a summary about this gene. Some of the summaries may not contain information about the genes or families, you should ignore them.",
     "instr_2_fam_temp": "file:configs/instruct_without_name.txt",
+    
     "factcheck": "You will receive two texts. You will need to answer if the Text 1 is supported by what Text 2 contains. If it's true, respond 'Supported'. If no, respond 'Not supported'. Then elaborate how the text 1 is supported by text 2, or why text 1 is not supported by text 2."
 }
