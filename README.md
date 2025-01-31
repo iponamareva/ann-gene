@@ -42,7 +42,7 @@ LLM-specific:
 * ```genes_full_list_unreviewed.txt```
   
 **get_save_gene_snippets** -- searches for snippets mentioning the gene names in EuropePMC. Creates:
-* Log file ```gene_snippet_search_log.json``` that records which genes have been already searched for. It becomes useful when gene search in EuropePMC breaks, because EuropePMC can't handle too many requests at one time. This ususlly happens when you're running the script for many families at once. So when you restart it, with ```-Force=True```, it will start the gene search not from the beginning of the gene list, but from the gene where it broke down. If you run the script for few families, you don't need to worry about this.
+* Log file ```gene_snippet_search_log.json``` that records which genes have been already searched for. It becomes useful when gene search in EuropePMC breaks, because EuropePMC can't handle too many requests at one time. This ususlly happens when you're running the script for many families at once. So when you restart it, with ```-Force=True```, it will start the gene search not from the beginning of the gene list, but from the gene where it broke down. If you run the script for few families, you don't need to worry about this. To print the log, you can use ```get_log_stats``` from ```utils_snippet_search.py```.
 * ```{dir_name}/{query}/snippets_per_gene```: directory with csv files for each gene (gene_name.csv) which contain the snippets
 * ```genes_with_papers_list_all_review_status.txt```: file which contains information about genes for which snippets were found. Format: ```{gene_name}\t{num_papers}\t{num_snippets}```
   
@@ -79,5 +79,8 @@ Output (RESPONSE) files will be:
 * in family-specific directory
 * in directory ```ALL_RESPONSES```. It gets copied here from family-specific directory.
 
+### Additional
+
+```utils_snippet_search.py``` has some helper functions, which can become useful if you are running the script for many families at once. For example, ```get_log_stats``` tracks how many genes are processed was the search sucessful or not; ```get_num_genes_with_snippets``` logs how many genes with snippets were found. Basically, this functions can help to understand if you need to rerun the snippet search for a family.
 
  
