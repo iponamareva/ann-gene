@@ -89,7 +89,7 @@ def make_spec_stats_file(dir_name, family):
     
     for gene_name in gene_names:
         try:
-            all_hits_total, pos_hits_total, false_hits_total  = get_stats_for_gene_name(family, gene_name)
+            all_hits_total, prop_true, prop_false = get_stats_for_gene_name(family, gene_name)
         except:
             print('INFO: Error in retrieving data for gene name', gene_name)
             continue
@@ -97,12 +97,9 @@ def make_spec_stats_file(dir_name, family):
         if all_hits_total == 0:
             print('INFO:', family, 'Division by zero attempted')
             continue
-            
-        value_false = false_hits_total/all_hits_total
-        value_true = pos_hits_total/all_hits_total
 
         # sort first?
-        print(f'{gene_name}\t{all_hits_total}\t{round(value_true, 2)}\t{round(value_false, 2)}', file=summ_file)
-        print(f'{gene_name}\t{all_hits_total}\t{round(value_true, 2)}\t{round(value_false, 2)}')
+        print(f'{gene_name}\t{all_hits_total}\t{round(prop_true, 2)}\t{round(prop_false, 2)}', file=summ_file)
+        print(f'{gene_name}\t{all_hits_total}\t{round(prop_true, 2)}\t{round(prop_false, 2)}')
 
     summ_file.close()
