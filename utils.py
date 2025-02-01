@@ -405,7 +405,7 @@ def get_genes_by_type(query, dir_name, protein_type):
     else:
         with open(genes_path, 'r') as f:
             for line in f:
-                gene_name, uniprot_acc = line.strip().split()
+                gene_name, uniprot_acc = line.strip().split('\t')
                 result.add(gene_name)
     return result
 
