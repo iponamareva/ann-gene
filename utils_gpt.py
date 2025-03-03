@@ -49,6 +49,7 @@ def create_summary(client, messages, model):
     else:
         return completion.model_dump(exclude_unset=True)
 
+
 def parse_response(response):
     choice = response["choices"][0]
     if choice["finish_reason"] == "stop":
@@ -58,13 +59,13 @@ def parse_response(response):
         return 'No response'
 
 
-def get_gpt_genes_response(client, query, dir_name, gpt4_n, config, prompt_th):
+def get_gpt_genes_response(client, query, dir_name, run_name, gpt4_n, config, prompt_th):
     print('INFO: running per-gene summarization')
     model = config['model']
     GPT_USAGE = init_gpu_usage()
     
-    prefix = f'{dir_name}/{query}/per_gene_joined_prompts_dirty'
-    response_df_path = f'{dir_name}/{query}/per_gene_summaries_{model}_sample_{gpt4_n}_4o.csv'
+    prefix = f'{dir_name}/{query}/{run_name}/per_gene_joined_prompts_dirty'
+    response_df_path = f'{dir_name}/{query}/{run_name}/per_gene_summaries_{model}_sample_{gpt4_n}_4o.csv'
 
     # maybe i can make another version of the response instead
     if os.path.exists(response_df_path):
@@ -74,7 +75,7 @@ def get_gpt_genes_response(client, query, dir_name, gpt4_n, config, prompt_th):
         return GPT_USAGE, list(df['gene_name']), list(df['response'])
 
     # SHOULD I MOVE IT?
-    gene_prompt_paths = get_selected_genes_filepaths(query, dir_name, gpt4_n)
+    gene_prompt_paths = get_selected_genes_filepaths(query, dir_name, run_name, gpt4_n)
     gene_names, gpt4_responses = [], []
     
     if len(gene_prompt_paths) == 0:
@@ -202,32 +203,30 @@ def substitute_pmcid_to_pmid(text, df):
     return text
 
 
-def save_response(response, dir_name, query, model, N, timestamp_str, type='raw', response_dir='ALL_RESPONSES'):
-    response_txt_path = f'{dir_name}/{query}/RESPONSE_{type}_{model}_sample_{N}_{timestamp_str}.txt'
+def save_response(response, dir_name, query, run_name, model, N, response_dir, type='raw'):
+    response_txt_path = f'{dir_name}/{query}/{run_name}/RESPONSE_{type}.txt'
     with open(response_txt_path, 'w') as f:
         print(response, file=f)
 
     mkdirsafe(response_dir)
     
-    response_txt_path = f'{response_dir}/{dir_name}_{query}_RESPONSE_{type}_{model}_sample_{N}_{timestamp_str}.txt'
+    # removing 'run_results' from run name, only timestamp will remain
+    response_name = run_name[12:]
+    response_txt_path = f'{response_dir}/RESPONSE_{type}_{dir_name}_{query}_{run_name}.txt'
     with open(response_txt_path, 'w') as f:
         print(response, file=f)
 
 
-def get_gpt_family_response(client, query, dir_name, gene_names, gpt4_responses, config):
+def get_gpt_family_response(client, query, dir_name, run_name, gene_names, gpt4_responses, config, text_response_dir):
     print('INFO: Running family summarization')
-    # allowing multiple responses
     
     model = config['model']
     GPT_USAGE = init_gpu_usage()
     
     N = len(gene_names)
     
-    now = datetime.now()
-    timestamp_str = now.strftime("%Y-%m-%d %H:%M:%S")
-        
     prompt_text = make_family_prompt(gene_names, gpt4_responses, config)
-    with open(f'{dir_name}/{query}/PROMPT_family_text_sample_{N}_{timestamp_str}.txt', 'w') as f:
+    with open(f'{dir_name}/{query}/{run_name}/PROMPT_family.txt', 'w') as f:
         print(prompt_text, file=f)
 
     parsed_response, pmid_parsed_response = 'No response', 'No response'
@@ -242,12 +241,12 @@ def get_gpt_family_response(client, query, dir_name, gene_names, gpt4_responses,
     GPT_USAGE['NUM_CHARS'] += len(prompt_text)
     parsed_response = parse_response(response)
 
-    save_response(parsed_response, dir_name, query, model, N, timestamp_str, type='raw')
+    save_response(parsed_response, dir_name, query, run_name, model, N, text_response_dir, type='raw')
 
     df_factcheck = get_family_summary_citations(query, dir_name, parsed_response)
     pmid_parsed_response = substitute_pmcid_to_pmid(parsed_response, df_factcheck)
     
-    save_response(pmid_parsed_response, dir_name, query, model, N, timestamp_str, type='pmid')
+    save_response(pmid_parsed_response, dir_name, query, run_name, model, N, text_response_dir, type='pmid')
     
     return GPT_USAGE, parsed_response, pmid_parsed_response
 

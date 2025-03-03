@@ -10,6 +10,8 @@ import argparse
 import pickle
 import xml.etree.ElementTree as ET
 
+from collections import defaultdict
+
 from utils_famfilter import make_spec_stats_file
 
 retries = Retry(total=5,
@@ -26,21 +28,19 @@ def get_dbname_from_acc(accession):
 
 
 def make_and_save_data(name, output_path, found_mentions):    
-    paper_nums, paper_ids, excerpt_nums, excerpt_ids = [], [], [], []
+    paper_nums, paper_ids, snippet_nums = [], [], []
     snippets = []
     for i, paper_id in enumerate(found_mentions):
         for j, entry in enumerate(found_mentions[paper_id]):
             paper_nums.append(i)
             paper_ids.append(paper_id)
-            excerpt_nums.append(j)
+            snippet_nums.append(j)
             snippets.append(entry)
-            excerpt_ids.append(f'{paper_id}_{j}')
             
     df_domain_mentions = pd.DataFrame({
         'paper_id': paper_ids,
         'paper_num': paper_nums,
-        'excerpt_num': excerpt_nums,
-        'excerpt_id': excerpt_ids,
+        'snippet_num': snippet_nums,
         'snippet': snippets,
     })
     
@@ -64,6 +64,15 @@ def verbose_args(args):
     for arg in vars(args):
         print(arg, getattr(args, arg))
     print('-'*80)
+
+
+def save_args_log(args, config, run_name):
+    with open(f'{args.dir_name}/{args.query}/{run_name}/run_args.log', 'w') as f:
+        for arg in vars(args):
+            print(arg, getattr(args, arg), file=f)
+        print('CONFIG', file=f)
+        for key in config:
+            print(key, config[key], file=f)
 
 
 def get_first_page(query_text, sess):
@@ -138,7 +147,6 @@ def parse_xml_response(domain_name, text, window):
 
 
 def make_snippets(query, max_pages, snippet_window_size):
-
     sess = requests.Session()
     sess.mount('https://', HTTPAdapter(max_retries=retries))
     
@@ -404,8 +412,11 @@ def get_genes_by_type(query, dir_name, protein_type):
         return result
     else:
         with open(genes_path, 'r') as f:
-            for line in f:
-                gene_name, uniprot_acc = line.strip().split('\t')
+            for i, line in enumerate(f):
+                try:
+                    gene_name, uniprot_acc = line.strip().split('\t')
+                except:
+                    print(f'ERROR: error in processing {genes_path}. Cannot parse line {i}')
                 result.add(gene_name)
     return result
 
@@ -455,7 +466,7 @@ def get_save_gene_snippets(query, dir_name, max_pages_per_gene, snippet_window_s
     
         # if the data about genes already exists
         if from_gene_list:
-            if info_path is None:
+            if gene_list_filename is None:
                 print('ERROR: Gene list not provided. Either provide gene list or set from_gene_list=False.')
                 raise Exception
                 
@@ -606,31 +617,77 @@ def get_save_gene_snippets(query, dir_name, max_pages_per_gene, snippet_window_s
     return num_genes_with_snippets
 
 
-def create_paper_gene_mapping(query, dir_name):
-    '''
-    Creates mapping paper id -> gene which it mentions
-    TODO: what if paper mentions >1 relevant genes?
-    '''
-    data = dict()
-    prefix = f'{dir_name}/{query}/snippets_per_gene'
-    file_names = os.listdir(prefix)
+def enumerate_snippets(query, dir_name):
+    # renaming columns
+    def adjust_column_names(df):
+        try:
+            df.rename(columns={'excerpt_num': 'snippet_num'}, inplace=True)
+            df.drop(columns=['excerpt_id'], inplace=True)
+        except:
+            pass
+        try:
+            df.drop(columns=['snippet_id'], inplace=True)
+        except:
+            pass
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+            
+        return df
+    
+    snippets_path = f'{dir_name}/{query}/snippets_per_gene'
+    file_names = os.listdir(snippets_path)
+    file_names = [x for x in file_names if x[0] != '.']
+
+    paper_to_cnt = defaultdict(int)
+    snippet_id_to_gene = dict()
+    paper_to_genes = dict()
+
     for file_name in file_names:
-        df = pd.read_csv(prefix + '/' + file_name)
-        gene_name = os.path.splitext(file_name)[0]
-        paper_ids = list(set(df['paper_id']))
+        snippet_file_path = snippets_path + '/' + file_name
+        df = pd.read_csv(snippet_file_path)
+        df = adjust_column_names(df)
         
-        for paper_id in paper_ids:
-            data[paper_id] = gene_name
+        gene_name = os.path.splitext(file_name)[0]
+        snippet_ids = []
+        
+        for i, row in df.iterrows():
+            paper_id = row['paper_id']
+            
+            if paper_id not in paper_to_genes:
+                paper_to_genes[paper_id] = []
+            paper_to_genes[paper_id].append(gene_name)
+            
+            paper_snippet_counter = paper_to_cnt[paper_id]
+            paper_to_cnt[paper_id] += 1
+            
+            snippet_id = f'{paper_id}_{paper_snippet_counter}'
+            snippet_ids.append(snippet_id)
+            
+            snippet_id_to_gene[snippet_id] = gene_name
+            
+        df.insert(2, 'snippet_id', snippet_ids)
+        df.to_csv(snippet_file_path)
+            
+    with open(f"{dir_name}/{query}/tmp/snippet_id_to_gene.json", "w") as json_file:
+        json.dump(snippet_id_to_gene, json_file, indent=4)
+    with open(f"{dir_name}/{query}/tmp/paper_to_genes.json", "w") as json_file:
+        json.dump(paper_to_genes, json_file, indent=4)
+    paper_to_cnt = dict(paper_to_cnt)
+    with open(f"{dir_name}/{query}/tmp/paper_to_cnt.json", "w") as json_file:
+        json.dump(paper_to_cnt, json_file, indent=4)
 
-    # with open(f'{dir_name}/{query}/gene_paper_mapping.pkl', 'wb') as f:
-    #     pickle.dump(data, f)
-    return data
+    print('LOG: Sucessfully added snippet IDs. snippet_id_to_gene.josn, paper_to_genes.json, paper_to_cnt.json created')
 
+
+def get_snippet_id_to_gene_mapping(query, dir_name):
+    with open(f"{dir_name}/{query}/tmp/snippet_id_to_gene.json", "r") as json_file:
+        snippet_id_to_gene = json.load(json_file)
+    return snippet_id_to_gene
+    
 
 def run_factcheck(client, text1, text2, config):
     pass
-     
-
+    
+    
 def remove_citations(text):
     pattern = r'\s*\[\d+(?:,\s*\d+)*(?:-\d+)?\]'
     cleaned_text = re.sub(pattern, '', text)
@@ -639,18 +696,18 @@ def remove_citations(text):
     return cleaned_text
 
 
-def join_snippets_into_prompt(query, dir_name, N, config):
-    prefix = f'{dir_name}/{query}/snippets_per_gene'
-    save_path = f'{dir_name}/{query}/per_gene_joined_prompts_dirty'
+def join_snippets_into_prompt(query, dir_name, run_name, N, config):
+    snippets_path = f'{dir_name}/{query}/snippets_per_gene'
+    save_path = f'{dir_name}/{query}/{run_name}/per_gene_joined_prompts_dirty'
         
     mkdirsafe(save_path)
     
-    file_names = os.listdir(prefix)
+    file_names = os.listdir(snippets_path)
     file_names = [x for x in file_names if x[0] != '.']
     
     for file_name in file_names:
         gene_name = os.path.splitext(file_name)[0]
-        df = pd.read_csv(prefix + '/' + file_name)
+        df = pd.read_csv(snippets_path + '/' + file_name)
         
         instr_1 = config['instr_1_gene_temp'].format(gene_name)
         
@@ -667,7 +724,7 @@ def join_snippets_into_prompt(query, dir_name, N, config):
         i = 0
 
         for j, row in df.iterrows():
-            snippet, snippet_id = row['snippet'], row['excerpt_id']
+            snippet, snippet_id = row['snippet'], row['snippet_id']
             snippet = remove_citations(snippet)
             i += 1
             data = '{' + 'ID: ' + snippet_id + ',\n' + 'Content: ' + snippet + '}\n'
@@ -695,22 +752,21 @@ def join_snippets_into_prompt(query, dir_name, N, config):
         
         fname = f'{save_path}/{gene_name}.csv'
         df_prompts.to_csv(fname)
-        # print(f'Joined {gene_name} snippets: {fname}')
 
     print('INFO: Joined snippets into prompts using config')
 
 
-def select_genes(query, dir_name, N, TH_GOOD=0.5, TH_BAD=0.15, prompt_th=0, fam_filter_th=0):
+def select_genes(query, dir_name, run_name, N, TH_GOOD=0.5, TH_BAD=0.15, prompt_th=0, fam_filter_th=0):
     def fam_filter(gene_names, snippet_stats):
         result = []
         gene_stat_dict = dict()
         
-        selected_genes_filename = f'{dir_name}/{query}/selected_genes.txt'
+        selected_genes_filename = f'{dir_name}/{query}/{run_name}/selected_genes.txt'
         selected_genes_file = open(selected_genes_filename, 'w')
     
-        spec_stats_filename = f'{dir_name}/{query}/gene_spec_stats.tsv'
-        if not os.path.exists(spec_stats_filename):
-            make_spec_stats_file(dir_name, query)
+        spec_stats_filename = f'{dir_name}/{query}/tmp/gene_spec_stats.tsv'
+        # if not os.path.exists(spec_stats_filename):
+        make_spec_stats_file(dir_name, query)
         
         with open(spec_stats_filename, 'r') as f:
             for line in f:
@@ -729,6 +785,8 @@ def select_genes(query, dir_name, N, TH_GOOD=0.5, TH_BAD=0.15, prompt_th=0, fam_
             if (value_true >= 0.5 and value_false <= 0.2) or (value_false < 0.01 and value_true > 0.1):
                 result.append(gene_name)
                 print(f'{gene_name}\t{all_hits_total}\t{value_true}\t{value_false}\t{snippet_stats[gene_name][0]}\t{snippet_stats[gene_name][1]}\t{snippet_stats[gene_name][2]}', file=selected_genes_file)
+                if len(result) >= N:
+                    break
                 
         selected_genes_file.close()
         print('INFO: Created gene selection file', selected_genes_filename)
@@ -753,9 +811,9 @@ def select_genes(query, dir_name, N, TH_GOOD=0.5, TH_BAD=0.15, prompt_th=0, fam_
     return file_paths
 
 
-def get_selected_genes_filepaths(query, dir_name, N):
+def get_selected_genes_filepaths(query, dir_name, run_name, N):
     gene_names = []
-    selected_genes_filename = f'{dir_name}/{query}/selected_genes.txt'
+    selected_genes_filename = f'{dir_name}/{query}/{run_name}/selected_genes.txt'
     with open(selected_genes_filename, 'r') as f:
         for line in f:
             line = line.strip().split('\t')
@@ -787,7 +845,7 @@ def get_snippet_dict_by_gene_name(query, dir_name, gene_name):
         raise Exception(f"Snippet path error: file {snippets_path} doesnt exist")
         
     df_snippets = pd.read_csv(snippets_path)
-    snippet_dict = dict(zip(df_snippets['excerpt_id'], df_snippets['snippet']))
+    snippet_dict = dict(zip(df_snippets['snippet_id'], df_snippets['snippet']))
     return snippet_dict
 
 
@@ -842,29 +900,22 @@ def get_family_summary_citations(query, dir_name, text):
     Requires summary path to exist!
     '''
     snippet_ids_, gene_names_, snippet_content_ = [], [], []
-    paper_gene_mapping = create_paper_gene_mapping(query, dir_name)
+    snippet_id_to_gene = get_snippet_id_to_gene_mapping(query, dir_name)
     
     citations = find_citations(text)
     
     for snippet_id in citations:
         snippet_ids_.append(snippet_id)
-        paper_id = snippet_id.split('_')[0]
         
-        if paper_id not in paper_gene_mapping:
-            gene_names_.append('ERROR: hallucinated snippet id (paper id)')
-            snippet_content_.append('ERROR: hallucinated snippet id (paper id)')
-            continue
-            
-        gene_name = paper_gene_mapping[paper_id]
-        gene_names_.append(gene_name)
-            
-        snippet_dict = get_snippet_dict_by_gene_name(query, dir_name, gene_name)
-        
-        if snippet_id in snippet_dict:
-            snippet_content_.append(snippet_dict[snippet_id])
+        if snippet_id not in snippet_id_to_gene:
+            gene_names_.append('ERROR: hallucinated snippet ID')
+            snippet_content_.append('ERROR: hallucinated snippet ID')
         else:
-            snippet_content_.append('ERROR: snippet not found (paper exists but wrong snippet id)')
-
+            gene_name = snippet_id_to_gene[snippet_id]
+            gene_names_.append(gene_name)
+            snippet_dict = get_snippet_dict_by_gene_name(query, dir_name, gene_name)
+            snippet_content_.append(snippet_dict[snippet_id])
+            
     df_factcheck = make_factcheck_df(query, dir_name, snippet_ids_, gene_names_, snippet_content_, type='family')
     if len(df_factcheck) == 0:
         return df_factcheck

@@ -78,7 +78,7 @@ def get_stats_for_gene_name(family, gene_name, verb_errors=False):
 def make_spec_stats_file(dir_name, family):
     # from scratch
     
-    summary_path = dir_name + '/' + family + '/' + 'gene_spec_stats.tsv'
+    summary_path = f'{dir_name}/{family}/tmp/gene_spec_stats.tsv'
     print('INFO: Creating gene specificity file', summary_path)
     
     summ_file = open(summary_path, 'w')
