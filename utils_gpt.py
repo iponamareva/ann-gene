@@ -51,6 +51,7 @@ def create_summary(client, messages, model):
 
 
 def parse_response(response):
+    print('response', response)
     choice = response["choices"][0]
     if choice["finish_reason"] == "stop":
         message = choice["message"]["content"]

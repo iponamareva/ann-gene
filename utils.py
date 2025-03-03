@@ -322,6 +322,31 @@ def pull_genes(family, dir, max_pages, force_flag):
     return genes
 
 
+def pull_genes_for_uniprot(family, dir_name, uniprot_accs_path, max_pages, force_flag):
+    # there are yet no catching exceptions here in case something goes wrong
+    uniprot_accs = []
+    with open(uniprot_accs_path, 'r') as f:
+        for line in f:
+            line=line.strip()
+            uniprot_accs.append(line)
+
+    genes = []
+    
+    for acc in uniprot_accs:
+        query =  f'https://rest.uniprot.org/uniprotkb/search?query=accession:{acc}'
+        r = requests.get(query)
+        data = r.json()
+        data['results']
+
+        for entry in data['results'][0]['genes']:
+            genes.append((entry['geneName']['value'], acc))
+    
+    gene_list_filename = f'{dir_name}/{family}/uniprot_gene_list.txt'
+    with open(gene_list_filename, 'w') as f:
+        for gene_entry in genes:
+            print(f'{gene_entry[0]}\t{gene_entry[1]}', file=f)
+
+
 # this is a supplementary function
 # it was used to retrieve  uniprot_accs only for reviewed genes
 def pull_reviewed_proteins(family, dir, max_pages=100):
