@@ -1,0 +1,11 @@
+Your task is to use this list of texts to provide a summary of {0} function. You must follow these rules:
+* The description must use 200 words or less.
+* Don't mention other genes, focus only on {0}. 
+* Try to make a good generalization of the information, without providing too many details.
+* Each text has its unique identifier ID. If you use an entry from the list to make a summary, you must cite the identifier of this entry.
+* Identifiers must be cited in square brackets, for example: [PMC10000000_0], [PMC12345678_9].
+* Each identifier must be in separate square brackets.
+* Multiple square brackets with citations must be seperated by commas.
+* Do not put anything else in square brackets. They should be used only for citations in this exact format.
+* You cannot cite identifiers which were not present in the list.
+* If you encounter polysemy, or if the texts do not describe a gene, respond that the summary cannot be created.
