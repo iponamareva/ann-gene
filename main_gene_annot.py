@@ -30,14 +30,14 @@ from utils_gpt import factcheck_summary, factcheck_gene_summary
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-config', '--config', type=str, default='configs/config.json')
-    parser.add_argument("-q", "--query", type=str, help='family')
-    parser.add_argument('-dir', '--dir-name', type=str, default='summ_results')
-    parser.add_argument('-o', '--text-output-dir-name', type=str, default='all_text_responses')
-
-    parser.add_argument('-uniprot', '--uniprot', type=bool, default=False)
-    parser.add_argument('-uniprot-list', '--uniprot-list', type=str)
+    parser.add_argument('-mode', '--mode', type=str, required=True, choices=["from-fam-acc", "from-gene-list", "from-uniprot-list"], default="from-fam-acc")
     
+    parser.add_argument('-config', '--config', type=str, default='configs/config-desc-name-CoT.json')
+    parser.add_argument("-q", "--query", type=str, help='family')
+    parser.add_argument('-dir', '--dir-name', type=str, default='output_per_query')
+    parser.add_argument('-o', '--text-output-dir-name', type=str, default='output')
+
+    parser.add_argument('-uniprot-list', '--uniprot-list', type=str, default="uniprot_list.txt")
     parser.add_argument("-genes", '--gene-list', type=str, default='gene_list_sorted.txt')
     
     parser.add_argument("-F", "--FORCE", type=bool, default=False)
@@ -52,7 +52,6 @@ def main():
     parser.add_argument('-run-gpt', '--run-gpt', type=int, default=0)
     
     parser.add_argument('-v', '--verbose', type=int, default=0)
-    parser.add_argument('-th', '--prompt-th', type=int, default=2)
 
     args = parser.parse_args()
     verbose_args(args)
@@ -74,14 +73,16 @@ def main():
 
     ''' Getting and saving snippets; Joining snippets into prompts '''
 
-    if args.uniprot:
-        pull_genes_for_uniprot(family=args.query, dir_name=args.dir_name, max_pages=args.max_pages_per_family, force_flag=args.FORCE)
-        gene_list_filename = f'{args.dir_name}/{args.query}/uniprot_gene_list.txt'
-        num_genes_with_snippets = get_save_gene_snippets(args.query, args.dir_name, args.max_pages_per_gene, args.snippet_window_size, force_flag=args.FORCE, from_gene_list=True, max_genes_each_type=args.max_genes_each_type, gene_list_filename=gene_list_filename)
-
-    else:
-        pull_genes(family=args.query, dir=args.dir_name, uniprot_accs_path=args.uniprot_list, max_pages=args.max_pages_per_family, force_flag=args.FORCE)
+    if args.mode == "from-fam-acc":
+        pull_genes(family=args.query, dir=args.dir_name, max_pages=args.max_pages_per_family, force_flag=args.FORCE)
         num_genes_with_snippets = get_save_gene_snippets(args.query, args.dir_name, args.max_pages_per_gene, args.snippet_window_size, force_flag=args.FORCE, from_gene_list=False, max_genes_each_type=args.max_genes_each_type, gene_list_filename=args.gene_list)
+
+    if args.mode == "from-gene-list":
+        num_genes_with_snippets = get_save_gene_snippets(args.query, args.dir_name, args.max_pages_per_gene, args.snippet_window_size, force_flag=args.FORCE, from_gene_list=True, max_genes_each_type=args.max_genes_each_type, gene_list_filename=args.gene_list)
+    
+    if args.mode == "from-uniprot-list":
+        gene_list_filename = pull_genes_for_uniprot(family=args.query, dir_name=args.dir_name, uniprot_accs_path=args.uniprot_list, max_pages=args.max_pages_per_family, force_flag=args.FORCE)
+        num_genes_with_snippets = get_save_gene_snippets(args.query, args.dir_name, args.max_pages_per_gene, args.snippet_window_size, force_flag=args.FORCE, from_gene_list=True, max_genes_each_type=args.max_genes_each_type, gene_list_filename=gene_list_filename)
 
     enumerate_snippets(args.query, args.dir_name)
     
@@ -93,7 +94,7 @@ def main():
         if len(selected_genes_file_paths) > 0:
     
             client = openai.OpenAI()
-            GPT_USAGE_1, gene_names, gpt4_responses = get_gpt_genes_response(client, args.query, args.dir_name, run_name, args.gpt4_n, config, args.prompt_th)
+            GPT_USAGE_1, gene_names, gpt4_responses = get_gpt_genes_response(client, args.query, args.dir_name, run_name, args.gpt4_n, config)
             GPT_USAGE_2, parsed_response, pmid_parsed_response = get_gpt_family_response(client, args.query, args.dir_name, run_name, gene_names, gpt4_responses, config, args.text_output_dir_name)
     
             print('*'*30 + args.query + '*'*30, f'\n{parsed_response}\n', '*'*79)

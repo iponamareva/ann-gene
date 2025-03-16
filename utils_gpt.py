@@ -60,7 +60,7 @@ def parse_response(response):
         return 'No response'
 
 
-def get_gpt_genes_response(client, query, dir_name, run_name, gpt4_n, config, prompt_th):
+def get_gpt_genes_response(client, query, dir_name, run_name, gpt4_n, config):
     print('INFO: running per-gene summarization')
     model = config['model']
     GPT_USAGE = init_gpu_usage()

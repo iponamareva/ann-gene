@@ -304,15 +304,22 @@ def pull_genes(family, dir, max_pages, force_flag):
         genes[protein_type] = set([(gene[0].casefold(), gene[1]) for gene in genes[protein_type]])
         # why similar genes appear? sometimes in reviewed and unreviewed are the same gene names
 
-    for protein_type in ['unreviewed', 'reviewed']:
-        info_path = f'{dir}/{family}/genes_full_list_{protein_type}.txt'
-        
-        if (force_flag or not os.path.exists(info_path) or os.path.getsize(info_path) == 0):
+    if (force_flag or not os.path.exists(info_path) or os.path.getsize(info_path) == 0):
+        print('LOG: writing tmp/review_status.txt')
+        review_status_tmp_filename = f'{dir}/{family}/tmp/review_status.txt'
+        review_status_tmp_file = open(review_status_tmp_filename, 'w')
+    
+        for protein_type in ['unreviewed', 'reviewed']:
+            info_path = f'{dir}/{family}/genes_full_list_{protein_type}.txt'
             print('LOG: writing genes_log to:', info_path)
             with open(info_path, 'w') as f:
                 for gene in genes[protein_type]:
                     print(f'{gene[0]}\t{gene[1]}', file=f)
-            print(f'INFO: wrote {len(genes[protein_type])} genes')
+                    print(f'{gene[0]}\t{gene[1]}\t{protein_type}', file=review_status_tmp_file)
+            print(f'INFO: wrote {len(genes[protein_type])} genes of type {protein_type}')
+        print(f'INFO: wrote tmp/review_status.txt file')
+        
+    review_status_tmp_file.close()
 
     if errors == 0:
         print('INFO: pull_genes function completed corectly')
@@ -323,6 +330,14 @@ def pull_genes(family, dir, max_pages, force_flag):
 
 
 def pull_genes_for_uniprot(family, dir_name, uniprot_accs_path, max_pages, force_flag):
+    def get_review_status(entry_type):
+        if entry_type == 'UniProtKB unreviewed (TrEMBL)':
+            return 'unreviewed'
+        elif entry_type == 'UniProtKB reviewed (Swiss-Prot)':
+            return 'reviewed'
+        else:
+            return 'unknown_review_status'
+        
     # there are yet no catching exceptions here in case something goes wrong
     uniprot_accs = []
     with open(uniprot_accs_path, 'r') as f:
@@ -336,19 +351,20 @@ def pull_genes_for_uniprot(family, dir_name, uniprot_accs_path, max_pages, force
         query =  f'https://rest.uniprot.org/uniprotkb/search?query=accession:{acc}'
         r = requests.get(query)
         data = r.json()
-        data['results']
-
+        review_status = get_review_status(data['results'][0]['entryType'])
         for entry in data['results'][0]['genes']:
-            genes.append((entry['geneName']['value'], acc))
+            genes.append((entry['geneName']['value'], acc, review_status))
     
     gene_list_filename = f'{dir_name}/{family}/uniprot_gene_list.txt'
     with open(gene_list_filename, 'w') as f:
         for gene_entry in genes:
-            print(f'{gene_entry[0]}\t{gene_entry[1]}', file=f)
+            print(f'{gene_entry[0]}\t{gene_entry[1]}\t{gene_entry[2]}', file=f)
+
+    return gene_list_filename
 
 
 # this is a supplementary function
-# it was used to retrieve  uniprot_accs only for reviewed genes
+# it was used to retrieve uniprot_accs only for reviewed genes
 def pull_reviewed_proteins(family, dir, max_pages=100):
     errors = 0
     database_name = get_dbname_from_acc(family)
@@ -430,23 +446,71 @@ def pull_reviewed_proteins(family, dir, max_pages=100):
     return uniprot_accs
 
 
-def get_genes_by_type(query, dir_name, protein_type):
-    result = set()
-    genes_path = f'{dir_name}/{query}/genes_full_list_{protein_type}.txt'
-    if not os.path.exists(genes_path):
-        return result
+def get_genes_by_type(query, dir_name, protein_type, gene_list_filename):
+    '''
+        Returns set of genes based on review status. Used for sorting genes.
+    '''
+
+    def get_status_sets(filename):
+        reviewed, unreviewed = set(), set()
+        with open(filename, 'r') as f:
+            for line in f:
+                data = line.strip().split('\t')
+                if len(data) != 3:
+                    break
+                gene_name, uniprot_acc, review_status = data
+                if review_status == 'reviewed':
+                    reviewed.add(gene_name)
+                if review_status == 'unreviewed':
+                    unreviewed.add(gene_name)
+                    
+        unreviewed = unreviewed.difference(reviewed)
+        return reviewed, unreviewed
+
+    review_status_tmp_filename = f'{dir_name}/{query}/tmp/review_status.txt'
+    uniprot_gene_list_filename = f'{dir_name}/{query}/uniprot_gene_list.txt'
+    
+    # case 1: tmp file with review status exists. comes from mode="from-fam-acc"
+    if os.path.exists(review_status_tmp_filename):
+        reviewed, unreviewed = get_status_sets(review_status_tmp_filename)
+        
+    # case 2: gene list was provided
+    elif gene_list_filename is not None and os.path.exists(gene_list_filename):
+        reviewed, unreviewed = get_status_sets(gene_list_filename)
+
+    # case 3:
+    elif os.path.exists(uniprot_gene_list_filename):
+        reviewed, unreviewed = get_status_sets(uniprot_gene_list_filename)
+
+    # review status can't be determined
     else:
-        with open(genes_path, 'r') as f:
-            for i, line in enumerate(f):
-                try:
-                    gene_name, uniprot_acc = line.strip().split('\t')
-                except:
-                    print(f'ERROR: error in processing {genes_path}. Cannot parse line {i}')
-                result.add(gene_name)
-    return result
+        reviewed, unreviewed = set(), set()
+        
+    if protein_type == 'reviewed':
+        return reviewed
+    elif protein_type == 'unreviewed':
+        return unreviewed
+    else:
+        raise Exception("ERROR: Incorrect review status")
+
+    # in previous version, review_status.txt wasn't created explicitly. Not in use.
+
+    # result = set()
+    # genes_path = f'{dir_name}/{query}/genes_full_list_{protein_type}.txt'
+    # if not os.path.exists(genes_path):
+    #     return result
+    # else:
+    #     with open(genes_path, 'r') as f:
+    #         for i, line in enumerate(f):
+    #             try:
+    #                 gene_name, uniprot_acc = line.strip().split('\t')
+    #             except:
+    #                 print(f'ERROR: error in processing {genes_path}. Cannot parse line {i}')
+    #             result.add(gene_name)
+    # return result
 
 
-def get_per_gene_snippets_summary(query, dir_name):
+def get_per_gene_snippets_summary(query, dir_name, gene_list_filename=None):
     data = dict()
     if os.path.exists(f'{dir_name}/{query}/genes_with_papers_list_all_review_status.txt'):
         filename = f'{dir_name}/{query}/genes_with_papers_list_all_review_status.txt'
@@ -457,8 +521,8 @@ def get_per_gene_snippets_summary(query, dir_name):
     else:
         raise Exception
         
-    reviewed_genes = get_genes_by_type(query, dir_name, 'reviewed')
-    unreviewed_genes = get_genes_by_type(query, dir_name, 'unreviewed')
+    reviewed_genes = get_genes_by_type(query, dir_name, 'reviewed', gene_list_filename)
+    unreviewed_genes = get_genes_by_type(query, dir_name, 'unreviewed', gene_list_filename)
     
     with open(filename, 'r') as f:
         for line in f:
@@ -495,11 +559,17 @@ def get_save_gene_snippets(query, dir_name, max_pages_per_gene, snippet_window_s
                 print('ERROR: Gene list not provided. Either provide gene list or set from_gene_list=False.')
                 raise Exception
                 
-            info_path = f'{dir_name}/{query}/{gene_list_filename}'
-            with open(info_path, 'r') as f:
-               for line in f:
-                    gene_name, uniprot_acc = line.strip().split('\t')
-                    genes['unknown_review_status'].add((gene_name.casefold(), uniprot_acc))
+            with open(gene_list_filename, 'r') as f:
+                for line in f:
+                    data = line.strip().split('\t')
+                    # if gene list DOES NOT have information about review status
+                    if len(data) == 2:
+                        gene_name, uniprot_acc = data
+                        genes['unknown_review_status'].add((gene_name.casefold(), uniprot_acc))
+                    # else, if gene list HAS information about review status
+                    elif len(data) == 3:
+                        gene_name, uniprot_acc, review_status = data
+                        genes[review_status].add((gene_name.casefold(), uniprot_acc))
         else:
             for protein_type in ['reviewed', 'unreviewed']:
                 info_path = f'{dir_name}/{query}/genes_full_list_{protein_type}.txt'
@@ -508,7 +578,6 @@ def get_save_gene_snippets(query, dir_name, max_pages_per_gene, snippet_window_s
                         gene_name, uniprot_acc = line.strip().split('\t')
                         genes[protein_type].add((gene_name, uniprot_acc))
         return genes
-        
     
     def log_progress(gene_name, status):
         try:
@@ -522,7 +591,6 @@ def get_save_gene_snippets(query, dir_name, max_pages_per_gene, snippet_window_s
         with open(log_file, 'w') as f:
             json.dump(log_data, f, indent=4)
 
-    
     def verbose_progress():
         try:
             with open(log_file, 'r') as f:
@@ -533,7 +601,6 @@ def get_save_gene_snippets(query, dir_name, max_pages_per_gene, snippet_window_s
                 print(f'INFO: tried to process: {num_processed}, success: {num_success}, fail: {num_fail}.')
         except:
             print('INFO: no gene snippet search log file yet')
-
     
     def get_processed_genes():
         try:
@@ -544,6 +611,9 @@ def get_save_gene_snippets(query, dir_name, max_pages_per_gene, snippet_window_s
             return set()
 
     def process_genes(unique_gene_names_all, max_pages_per_gene, snippet_window_size, max_genes_each_type):
+        ''' Main function for making snippets.
+            Calls make_snippets function and logs progress.
+        '''
         unique_gene_names_all = list(unique_gene_names_all)[:max_genes_each_type]
         # filter names that will cause error!
         # x.find('.') == -1 and
@@ -595,6 +665,9 @@ def get_save_gene_snippets(query, dir_name, max_pages_per_gene, snippet_window_s
 
     
     def make_summary():
+        ''' Makes summary file for all genes with snippets.
+            Used later.
+        '''
         summary_info = []
         gene_names_all = [x[:-4] for x in os.listdir(snippets_path)]
         for gene_name in gene_names_all:
@@ -606,7 +679,7 @@ def get_save_gene_snippets(query, dir_name, max_pages_per_gene, snippet_window_s
             for elem in summary_info:
                 print(f'{elem[0]}\t{elem[1]}\t{elem[2]}', file=f)
         print('INFO: created gene snippet search summary in format: gene_name\tnum_papers\tnum_snippets')
-
+        
     
     genes = get_genes_from_txt(from_gene_list)
     
@@ -781,7 +854,7 @@ def join_snippets_into_prompt(query, dir_name, run_name, N, config):
     print('INFO: Joined snippets into prompts using config')
 
 
-def select_genes(query, dir_name, run_name, N, TH_GOOD=0.5, TH_BAD=0.15, prompt_th=0, fam_filter_th=0):
+def select_genes(query, dir_name, run_name, N, TH_GOOD=0.5, TH_BAD=0.15):
     def fam_filter(gene_names, snippet_stats):
         result = []
         gene_stat_dict = dict()
