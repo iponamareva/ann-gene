@@ -330,7 +330,11 @@ def pull_genes(family, dir, max_pages, force_flag):
 
 
 def pull_genes_for_uniprot(family, dir_name, uniprot_accs_path, max_pages, force_flag):
-    def get_review_status(entry_type):
+    def get_review_status(data):
+        if 'entryType' not in data['results'][0]:
+            return unknown_review_status
+            
+        entry_type = data['results'][0]['entryType']
         if entry_type == 'UniProtKB unreviewed (TrEMBL)':
             return 'unreviewed'
         elif entry_type == 'UniProtKB reviewed (Swiss-Prot)':
@@ -351,9 +355,11 @@ def pull_genes_for_uniprot(family, dir_name, uniprot_accs_path, max_pages, force
         query =  f'https://rest.uniprot.org/uniprotkb/search?query=accession:{acc}'
         r = requests.get(query)
         data = r.json()
-        review_status = get_review_status(data['results'][0]['entryType'])
-        for entry in data['results'][0]['genes']:
-            genes.append((entry['geneName']['value'], acc, review_status))
+        review_status = get_review_status(data)
+        if 'genes' in data['results'][0]:
+            for entry in data['results'][0]['genes']:
+                if 'geneName' in entry:
+                    genes.append((entry['geneName']['value'], acc, review_status))
     
     gene_list_filename = f'{dir_name}/{family}/uniprot_gene_list.txt'
     with open(gene_list_filename, 'w') as f:
