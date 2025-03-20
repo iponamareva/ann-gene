@@ -56,8 +56,10 @@ LLM-specific:
 * Log file ```gene_snippet_search_log.json``` that records which genes have been already searched for. It becomes useful when gene search in EuropePMC breaks, because EuropePMC can't handle too many requests at one time. This ususlly happens when you're running the script for many families at once. So when you restart it, with ```-Force=True```, it will start the gene search not from the beginning of the gene list, but from the gene where it broke down. If you run the script for few families, you don't need to worry about this. To print the log, you can use ```get_log_stats``` from ```utils_snippet_search.py```.
 * ```{dir_name}/{query}/snippets_per_gene```: directory with csv files for each gene (gene_name.csv) which contain the snippets
 * ```genes_with_papers_list_all_review_status.txt```: file which contains information about genes for which snippets were found. Format: ```{gene_name}\t{num_papers}\t{num_snippets}```
-  
-**join_snippets_into_prompt**: uses snippets created by the previous function to create gene-specific prompts for generating gene summary.
+
+**enumerate_snippets**: adds snippet IDs to the snippets.
+
+**join_snippets_into_prompt**: uses snippets created by **get_save_gene_snippets** function to create gene-specific prompts for generating gene summary.
 
 **select_genes**: performs filtering and sorting of the genes. 
 
