@@ -33,22 +33,22 @@ def main():
     parser.add_argument('-mode', '--mode', type=str, required=True, choices=["from-fam-acc", "from-gene-list", "from-uniprot-list"], default="from-fam-acc")
     
     parser.add_argument('-config', '--config', type=str, default='configs/config-desc-name-CoT.json')
-    parser.add_argument("-q", "--query", type=str, help='family')
+    parser.add_argument("-q", "--query", type=str, help='family name; actual name for gene search or placeholder name, depending on the mode')
     parser.add_argument('-dir', '--dir-name', type=str, default='output_per_query')
     parser.add_argument('-o', '--text-output-dir-name', type=str, default='output')
 
     parser.add_argument('-uniprot-list', '--uniprot-list', type=str, default="uniprot_list.txt")
-    parser.add_argument("-genes", '--gene-list', type=str, default='gene_list_sorted.txt')
+    parser.add_argument("---gene-list", '--gene-list', type=str, default='gene_list_sorted.txt')
     
     parser.add_argument("-F", "--FORCE", type=bool, default=False)
     
-    parser.add_argument("-max", "--max-pages-per-family", type=int, default=100, help='maximum number of pages per family to parse, default=10')
+    parser.add_argument("-max", "--max-pages-per-family", type=int, default=1000, help='maximum number of pages per family to parse, default=1000')
     parser.add_argument("-max2", "--max-pages-per-gene", type=int, default=1, help='maximum number of pages per gene to parse, default=1')
     parser.add_argument("-max3", "--max-genes-each-type", type=int, default=1000, help='maximum number of genes')
     parser.add_argument('-s', '--snippet-window-size', type=int, default=300, help='snippet window size in characters, snippet will be 2 times longer')
     
     parser.add_argument('-N1', '--num-snippets-in-prompt', type=int, default=100)
-    parser.add_argument('-N', '--gpt4-n', type=int, default=3)
+    parser.add_argument('-N', '--gpt4-n', type=int, default=10)
     parser.add_argument('-run-gpt', '--run-gpt', type=int, default=0)
     
     parser.add_argument('-v', '--verbose', type=int, default=0)

@@ -13,7 +13,7 @@ Bash script located at ```/hps/software/users/agb/research/irina/ann_gene.sh```.
 Example usage: 
 * ```./ann_gene.sh -q PTHR10000 -mode "from-fam-acc"```
 * ```./ann_gene.sh -q your_family_name -mode "from-uniprot-list" -uniprot-list your_uniprot_list.txt```
-* ```./ann_gene.sh -q your_family_name -mode "from-gene-list" -genes your_gene_list.txt```
+* ```./ann_gene.sh -q your_family_name -mode "from-gene-list" -gene-list your_gene_list.txt```
 
 **Python script**
 
@@ -30,6 +30,10 @@ main:
   * * ```"from-fam-acc"```: receives family accession given in the argument ```-q```.
   * * ```"from-gene-list"```: receives the path to the list of genes in the argument ```-genes```. The list should be a TXT file, where each line contains tab-separated gene name, uniprot accession, (optional) "reviewed"/"unreviewed" status. If review status is provided, "reviewed" enries will be preferred for family summary. Requires ```-q``` argument to be passed, which would be used as a family name. ```-q``` may be a placeholder name.
   * * ```"from-uniprot-list"```: receives the path to the list of UniProt accessions in the argument ```-uniprot-list```. The list should be a TXT file, where each line conians a UniProt accession. Requires ```-q``` argument to be passed, which would be used as a family name. ```-q``` may be a placeholder name.
+   
+Mode-specific arguments:
+* ```-gene-list, --gene-list```: **Required for ```"from-gene-list"``` mode.** The path to the TXT file containing genes for the family. Should be in format ```{gene_name}\t{uniprot_acc}``` or ```{gene_name}\t{uniprot_acc}\t{"reviewed"|"unreviewed"}"```.
+* ```-uniprot-list, -uniprot-list```: **Required for ```"from-uniprot-list"``` mode.** The path to the TXT file containing UniProt accessions. Each line should contain one UniProt accession. 
 
 * ```-q, --query```: query family. For ```"from-fam-acc"```, will be used for gene search (PANTHER, InterPro, Pfam are supported). For ```"from-gene-list"```, ```"from-uniprot-list"```, can be a placeholder name.
 * ```-dir, --dir-name```: output directory with per-family results and logs. Will be created if doesn't exist. ```default='output_per_query'```.
@@ -41,20 +45,17 @@ main:
   * * ```config-without-name.json```:  The model will generate only family summary (no name/short_name). Similar to previous config, but the prompt is written differently.
   * * ```config-desc-name-CoT.json```:  The model will generate family summary, name, short_name. Uses Chain of Thought approach for name/shart_name.
    
-Mode-specific arguments:
-* ```-genes, --gene-list```: **Required for ```"from-gene-list"``` mode.** The path to the TXT file containing genes for the family. Should be in format ```{gene_name}\t{uniprot_acc}``` or ```{gene_name}\t{uniprot_acc}\t{"reviewed"|"unreviewed"}"```.
-* ```-uniprot-list, -uniprot-list```: **Required for ```"from-uniprot-list"``` mode.** The path to the TXT file containing UniProt accessions. Each line should contain one UniProt accession. 
 
-The following can be left without modification:
+The following arguments can be left without modification:
 * ```-F, --FORCE```: flag forcing to perform the gene search and snippet creating, even if the respective files already exist. You can leave it ```True```.
-* ```-max, --max-pages-per-family```: maximum number of pages per family to parse. Each page has 25 genes, you might want to increase it to 100 or 1000.
-* ```-max2, --max-pages-per-gene```: maximum number of EuropePMC pages per gene to parse
+* ```-max, --max-pages-per-family```: maximum number of pages per family to parse. Each page has 25 genes, you might want to decrease it from 1000 to 100 or 100, if the search is taking too much time. You can also increase it, if not all genes are covered by the search.
+* ```-max2, --max-pages-per-gene```: maximum number of EuropePMC pages per gene to parse.
 * ```-max3, --max-genes-each-type```: maximum number of genes of each type (reviewed, unreviewed, unknown review status).
 * ```-s, --snippet-window-size```: snippet window size in characters, snippet will be 2 times longer
 
 LLM-specific:
 * ```-N1, --num-snippets-in-prompt```: number of snippets used in prompt to create a gene summary. Default 100 is ok.
-* ```-N, --gpt4-n```: number of genes used in prompt for family summary. Default is 3, but I suggest using 10.
+* ```-N, --gpt4-n```: number of genes used in prompt for family summary. Default is 10.
 * ```-run-gpt, --run-gpt```: if API call to GPT should be ran. Set to ```True``` if you want to run it.
 
 ### Main functions and what they do
