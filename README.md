@@ -1,8 +1,10 @@
 # ann-gene
 
-Example usage:
+Gene-based protein family annotation.
 
-```python3 main_gene_annot.py -q PTHR10000 -dir OUTPUT -run-gpt 1 -N 10```
+### Example usage:
+
+```python3 main_gene_annot.py -mode "from-fam-acc" -q PTHR10000 -dir OUTPUT -run-gpt 1 -N 10```
 
 You need to add you OPENAI key first. In bash, do:
 
@@ -13,26 +15,35 @@ You need to add you OPENAI key first. In bash, do:
 ### Arguments:
 
 main:
-* ```-q, --query```: query family. PANTHER, InterPro, Pfam are supported.
-* ```-dir, --dir-name```: output directory. Will be created if doesn't exist.
-* ```-config, --config```: prompt config. Should be in json format.
+* ```-mode, --mode```: running mode. Supports 3 modes:
+  * * ```"from-fam-acc"```: receives family accession given in the argument ```-q```.
+  * * ```"from-gene-list"```: receives the path to the list of genes in the argument ```-genes```. The list should be a TXT file, where each line contains tab-separated gene name, uniprot accession, (optional) "reviewed"/"unreviewed" status. If review status is provided, "reviewed" enries will be preferred for family summary. Requires ```-q``` argument to be passed, which would be used as a family name. ```-q``` may be a placeholder name.
+  * * ```"from-uniprot-list"```: receives the path to the list of UniProt accessions in the argument ```-uniprot-list```. The list should be a TXT file, where each line conians a UniProt accession. Requires ```-q``` argument to be passed, which would be used as a family name. ```-q``` may be a placeholder name.
+
+* ```-q, --query```: query family. For ```"from-fam-acc"```, will be used for gene search (PANTHER, InterPro, Pfam are supported). For ```"from-gene-list"```, ```"from-uniprot-list"```, can be a placeholder name.
+* ```-dir, --dir-name```: output directory with per-family results and logs. Will be created if doesn't exist. ```default='output_per_query'```.
+* ```'-o', '--text-output-dir-name'```: output directory with generated model responses. Will be created if doesn't exist. ```default='output'```
+* ```-config, --config```: prompt config. Should be in json format. **Must be present in the working directory.**
   
-  ```configs``` directory has the following configs:
+  ```configs``` directory in this repo has the following configs:
   * * ```config.json```: simple config. The model will generate only family summary (no name/short_name)
   * * ```config-without-name.json```:  The model will generate only family summary (no name/short_name). Similar to previous config, but the prompt is written differently.
   * * ```config-desc-name-CoT.json```:  The model will generate family summary, name, short_name. Uses Chain of Thought approach for name/shart_name.
-* ```-genes, --gene-list```: (optional) path to the file containing genes for the family. Should be in directory {dir_name}/{query}. Should be in format ```{gene_name}\t{uniprot_acc}```.
+   
+Mode-specific arguments:
+* ```-genes, --gene-list```: **Required for ```"from-gene-list"``` mode.** The path to the TXT file containing genes for the family. Should be in format ```{gene_name}\t{uniprot_acc}``` or ```{gene_name}\t{uniprot_acc}\t{"reviewed"|"unreviewed"}"```.
+* ```-uniprot-list, -uniprot-list```: **Required for ```"from-uniprot-list"``` mode.** The path to the TXT file containing UniProt accessions. Each line should contain one UniProt accession. 
 
 The following can be left without modification:
-* ```-F, --FORCE```: flag forcing to perform the gene search and snippet creating, even if respective files already exist. You can leave it ```True```.
+* ```-F, --FORCE```: flag forcing to perform the gene search and snippet creating, even if the respective files already exist. You can leave it ```True```.
 * ```-max, --max-pages-per-family```: maximum number of pages per family to parse. Each page has 25 genes, you might want to increase it to 100 or 1000.
-* ```-max2, --max-pages-per-gene```: maximum number of pages per gene to parse
-* ```-max3, --max-genes-each-type```: maximum number of genes
+* ```-max2, --max-pages-per-gene```: maximum number of EuropePMC pages per gene to parse
+* ```-max3, --max-genes-each-type```: maximum number of genes of each type (reviewed, unreviewed, unknown review status).
 * ```-s, --snippet-window-size```: snippet window size in characters, snippet will be 2 times longer
 
 LLM-specific:
 * ```-N1, --num-snippets-in-prompt```: number of snippets used in prompt to create a gene summary. Default 100 is ok.
-* ```-N, --gpt4-n```: number of genes used in prompt for family summary. Default is 3, but I suggest using 10
+* ```-N, --gpt4-n```: number of genes used in prompt for family summary. Default is 3, but I suggest using 10.
 * ```-run-gpt, --run-gpt```: if API call to GPT should be ran. Set to ```True``` if you want to run it.
 
 ### Main functions and what they do
