@@ -2,13 +2,24 @@
 
 Gene-based protein family annotation.
 
-### Example usage:
+### Usage:
+
+You need to add you OPENAI key first. In bash, do: ```export OPENAI_API_KEY=your-secret-key-here```
+
+**(For the InterPro curators) Bash script on Codon cluster**
+
+Bash script located at ```/hps/software/users/agb/research/irina/ann_gene.sh```. You can call it with the same arguments descriped below. You don't need to provide configs if you are using the bash script. 
+
+Example usage: 
+* ```./ann_gene.sh -q PTHR10000 -mode "from-fam-acc"```
+* ```./ann_gene.sh -q your_family_name -mode "from-uniprot-list" -uniprot-list your_uniprot_list.txt```
+* ```./ann_gene.sh -q your_family_name -mode "from-gene-list" -genes your_gene_list.txt```
+
+**Python script**
+
+Example usage:
 
 ```python3 main_gene_annot.py -mode "from-fam-acc" -q PTHR10000 -dir OUTPUT -run-gpt 1 -N 10```
-
-You need to add you OPENAI key first. In bash, do:
-
-```export OPENAI_API_KEY=your-secret-key-here```
 
 ![Figure 1](./1.jpg)
 
