@@ -11,9 +11,9 @@ You need to add you OPENAI key first. In bash, do: ```export OPENAI_API_KEY=your
 Bash script located at ```/hps/software/users/agb/research/irina/ann_gene.sh```. You can call it with the same arguments descriped below. You don't need to provide configs if you are using the bash script. 
 
 Example usage: 
-* ```./ann_gene.sh -q PTHR10000 -mode "from-fam-acc"```
-* ```./ann_gene.sh -q your_family_name -mode "from-uniprot-list" -uniprot-list your_uniprot_list.txt```
-* ```./ann_gene.sh -q your_family_name -mode "from-gene-list" -gene-list your_gene_list.txt```
+* ```./ann_gene.sh -q PTHR10000 -mode "from-fam-acc" -run-gpt 1```
+* ```./ann_gene.sh -q your_family_name -mode "from-uniprot-list" -uniprot-list your_uniprot_list.txt -run-gpt 1```
+* ```./ann_gene.sh -q your_family_name -mode "from-gene-list" -gene-list your_gene_list.txt -run-gpt 1```
 
 **Python script**
 
