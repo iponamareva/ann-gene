@@ -58,7 +58,8 @@ def main():
 
     # with open(args.config, 'r') as config_file:
     #     config = json.load(config_file)
-    config = json.load("/hps/software/users/agb/research/irina/configs/config-desc-name-CoT.json")
+    with open("/hps/software/users/agb/research/irina/configs/config-desc-name-CoT.json", 'r') as config_file:
+        config = json.load(config_file)
 
     mkdirsafe(args.text_output_dir_name)
     # raise Exception(f'ERROR: Text piyput dir {args.text_output_dir_name} does not exist. Please create it')
