@@ -50,6 +50,7 @@ def main():
     parser.add_argument('-N1', '--num-snippets-in-prompt', type=int, default=100)
     parser.add_argument('-N', '--gpt4-n', type=int, default=10)
     parser.add_argument('-run-gpt', '--run-gpt', type=int, default=0)
+    parser.add_argument('-sf', '--do-spec-filter', type=bool, default=True)
     
     parser.add_argument('-v', '--verbose', type=int, default=0)
 
@@ -89,7 +90,7 @@ def main():
     enumerate_snippets(args.query, args.dir_name)
     
     join_snippets_into_prompt(args.query, args.dir_name, run_name, args.num_snippets_in_prompt, config)
-    selected_genes_file_paths = select_genes(args.query, args.dir_name, run_name, args.gpt4_n)
+    selected_genes_file_paths = select_genes(args.query, args.dir_name, run_name, args.gpt4_n, spec_filter=args.do_spec_filter)
     
     ''' Using GPT-4 API to make summaries '''
     if args.run_gpt:

@@ -319,7 +319,7 @@ def pull_genes(family, dir, max_pages, force_flag):
             print(f'INFO: wrote {len(genes[protein_type])} genes of type {protein_type}')
         print(f'INFO: wrote tmp/review_status.txt file')
         
-    review_status_tmp_file.close()
+        review_status_tmp_file.close()
 
     if errors == 0:
         print('INFO: pull_genes function completed corectly')
@@ -860,7 +860,10 @@ def join_snippets_into_prompt(query, dir_name, run_name, N, config):
     print('INFO: Joined snippets into prompts using config')
 
 
-def select_genes(query, dir_name, run_name, N, TH_GOOD=0.5, TH_BAD=0.15):
+def select_genes(query, dir_name, run_name, N, TH_GOOD=0.5, TH_BAD=0.15, spec_filter=True):
+    if not spec_filter:
+        print('INFO: Specificity filter turned OFF')
+        
     def fam_filter(gene_names, snippet_stats):
         result = []
         gene_stat_dict = dict()
@@ -886,7 +889,7 @@ def select_genes(query, dir_name, run_name, N, TH_GOOD=0.5, TH_BAD=0.15):
                 continue
             all_hits_total, value_true, value_false = gene_stat_dict[gene_name]
             
-            if (value_true >= 0.5 and value_false <= 0.2) or (value_false < 0.01 and value_true > 0.1):
+            if (not spec_filter) or (value_true >= 0.5 and value_false <= 0.2) or (value_false < 0.01 and value_true > 0.1):
                 result.append(gene_name)
                 print(f'{gene_name}\t{all_hits_total}\t{value_true}\t{value_false}\t{snippet_stats[gene_name][0]}\t{snippet_stats[gene_name][1]}\t{snippet_stats[gene_name][2]}', file=selected_genes_file)
                 if len(result) >= N:
