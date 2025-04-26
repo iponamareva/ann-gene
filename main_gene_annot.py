@@ -50,7 +50,7 @@ def main():
     parser.add_argument('-N1', '--num-snippets-in-prompt', type=int, default=100)
     parser.add_argument('-N', '--gpt4-n', type=int, default=10)
     parser.add_argument('-run-gpt', '--run-gpt', type=int, default=0)
-    parser.add_argument('-sf', '--do-spec-filter', type=bool, default=True)
+    parser.add_argument('-sf', '--do-spec-filter', type=int, default=1)
     
     parser.add_argument('-v', '--verbose', type=int, default=0)
 
