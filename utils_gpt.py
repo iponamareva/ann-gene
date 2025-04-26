@@ -209,6 +209,10 @@ def save_response(response, dir_name, query, run_name, model, N, response_dir, t
     with open(response_txt_path, 'w') as f:
         print(response, file=f)
 
+    response_txt_path = f'{dir_name}/{query}/RESPONSE_{type}.txt'
+    with open(response_txt_path, 'w') as f:
+        print(response, file=f)
+
     mkdirsafe(response_dir)
     
     # removing 'run_results' from run name, only timestamp will remain
