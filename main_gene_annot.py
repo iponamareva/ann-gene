@@ -32,7 +32,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', '--mode', type=str, required=True, choices=["from-fam-acc", "from-gene-list", "from-uniprot-list"], default="from-fam-acc")
     
-    # parser.add_argument('-config', '--config', type=str, default='configs/config-desc-name-CoT.json')
+    parser.add_argument('-config', '--config', type=str, default=None)
     parser.add_argument("-q", "--query", type=str, help='family name; actual name for gene search or placeholder name, depending on the mode')
     parser.add_argument('-dir', '--dir-name', type=str, default='output_per_query')
     parser.add_argument('-o', '--text-output-dir-name', type=str, default='output')
@@ -57,10 +57,12 @@ def main():
     args = parser.parse_args()
     verbose_args(args)
 
-    # with open(args.config, 'r') as config_file:
-    #     config = json.load(config_file)
-    with open("/hps/software/users/agb/research/irina/configs/config-desc-name-CoT.json", 'r') as config_file:
-        config = json.load(config_file)
+    if args.config is not None:
+        with open(args.config, 'r') as config_file:
+            config = json.load(config_file)
+    else:
+        with open("/hps/software/users/agb/research/irina/configs/config-desc-name-CoT.json", 'r') as config_file:
+            config = json.load(config_file)
 
     mkdirsafe(args.text_output_dir_name)
     # raise Exception(f'ERROR: Text piyput dir {args.text_output_dir_name} does not exist. Please create it')
